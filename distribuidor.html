@@ -464,7 +464,7 @@ function buildMobileView() {
   })
 }
 
-async function if (window.innerWidth < 768) { viewMode = 'mobile'; document.getElementById('tog-desk').className='toggle-opt'; document.getElementById('tog-mob').className='toggle-opt active' }
+async function loadCatalog() {
 loadCatalog() {
   const { data, error } = await sb.from('stock_available').select('*')
   if (error) { setConn(false); return }
