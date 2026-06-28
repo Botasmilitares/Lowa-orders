@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LOWA-BM Formulario de Pedido desde Alemania — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --g:#1F4E3D;--gm:#375623;--gl:#E2EFDA;--gp:#F2F7F2;
+  --y:#FFD966;--yl:#FFFF99;--r:#C00000;--rl:#FFCCCC;
+  --am:#BF8F00;--al:#FFEB9C;--na:#E8E8E8;--bl:#1F497D;--bll:#DCE6F1;
+  --font:Arial,'Helvetica Neue',sans-serif;
+}
+body{font-family:var(--font);font-size:13px;color:#1a1a1a;background:#f0f0ee;min-height:100vh}
+.app{max-width:1500px;margin:0 auto;background:#fff;min-height:100vh}
+
+/* HEADER */
+.hdr{background:var(--g);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hdr h1{font-size:16px;font-weight:500}
+.hdr-sub{font-size:11px;opacity:.7;margin-top:2px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.cs{font-size:11px;color:rgba(255,255,255,.8);display:flex;align-items:center;gap:4px}
+
+/* KPI BAR */
+.kpi-bar{padding:16px 24px;background:var(--gp);border-bottom:1px solid #d0ddd6;display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.kpi{background:#fff;border:.5px solid #d0ddd6;border-radius:8px;padding:12px 14px;text-align:center}
+.kpi-label{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.kpi-val{font-size:22px;font-weight:500;color:var(--g)}
+.kpi-val.warn{color:var(--am)}
+.kpi-val.err{color:var(--r)}
+
+/* TABS */
+.tabs{padding:0 24px;border-bottom:1px solid #e0e0e0;display:flex;gap:0}
+.tab{padding:10px 18px;font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:#666;transition:all .15s}
+.tab.active{color:var(--g);border-bottom-color:var(--g)}
+.tab:hover:not(.active){color:#333}
+
+/* TOOLBAR */
+.toolbar{padding:10px 24px;background:#fff;border-bottom:.5px solid #e0e0e0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.tlabel{font-size:11px;color:#666;white-space:nowrap}
+select{height:30px;padding:0 8px;font-size:12px;border:1px solid #ddd;border-radius:6px;background:#fff;color:#1a1a1a}
+select:focus{outline:none;border-color:var(--g)}
+.search-inp{height:30px;padding:0 10px;font-size:12px;border:1px solid #ddd;border-radius:6px;flex:1;min-width:160px}
+.search-inp:focus{outline:none;border-color:var(--g)}
+.spacer{flex:1}
+
+/* CONSOLIDATED TABLE */
+.tbl-wrap{overflow-x:auto;max-height:520px;overflow-y:auto}
+table{width:100%;border-collapse:collapse}
+thead th{position:sticky;top:0;z-index:10;background:var(--g);color:#fff;font-weight:500;font-size:11px;text-align:center;padding:6px 3px;white-space:nowrap;border-right:.5px solid rgba(255,255,255,.15)}
+thead th.th-info{text-align:left;padding-left:10px;min-width:180px;position:sticky;left:0;z-index:20;background:var(--g)}
+thead th.th-sz{width:40px;min-width:36px}
+.grp-hdr th{background:rgba(0,0,0,.22);font-size:10px;letter-spacing:.05em;padding:4px}
+tbody tr:hover{background:rgba(31,78,61,.035)}
+tbody tr.alt{background:var(--gp)}
+td{border-right:.5px solid #eaeaea;border-bottom:.5px solid #eee;padding:0;text-align:center;font-size:12px}
+td.td-info{text-align:left;position:sticky;left:0;background:inherit;z-index:5;padding:5px 8px;min-width:180px;border-right:1.5px solid #c8d8cc}
+.mt{font-size:12px;font-weight:500}
+.ms{font-size:10px;color:#666;margin-top:1px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.cpill{display:inline-flex;align-items:center;padding:1px 6px;border-radius:3px;font-size:10px}
+.cpill.c731{background:#e8d8b0;color:#6b4c00}
+.cpill.c999{background:#e0e0e0;color:#333}
+.cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px;border:1px solid rgba(0,0,0,.12);vertical-align:middle}
+td.ts{font-size:11px;color:var(--bl);font-weight:500;background:var(--bll)}
+td.ts0{font-size:10px;color:#bbb;background:#f8f8f8}
+td.tsna{background:var(--na);color:#ccc;font-size:10px}
+td.ta{font-size:11px;font-weight:500}
+td.ta.ok{color:var(--gm);background:var(--gl)}
+td.ta.lo{color:var(--am);background:var(--al)}
+td.ta.out{color:var(--r);background:var(--rl)}
+td.ta.na{background:var(--na);color:#ccc}
+td.to{font-size:11px;font-weight:600}
+td.to.has{color:#5c3a00;background:var(--y)}
+td.to.none{color:#bbb;background:#fafafa;font-size:10px}
+td.to.na{background:var(--na);color:#ccc}
+td.tref{background:var(--bll);color:var(--bl);font-size:11px;font-weight:600;padding:0 5px}
+td.tord-tot{background:var(--y);color:#5c3a00;font-size:12px;font-weight:700;padding:0 5px}
+td.tavail-tot.ok{background:#c0dd97;color:var(--gm);font-weight:700;padding:0 5px;font-size:11px}
+td.tavail-tot.lo{background:var(--al);color:var(--am);font-weight:700;padding:0 5px;font-size:11px}
+td.tavail-tot.out{background:var(--rl);color:var(--r);font-weight:700;padding:0 5px;font-size:11px}
+tr.sec-hdr td{background:rgba(31,78,61,.06);padding:4px 10px;font-size:10px;font-weight:600;color:var(--gm);text-transform:uppercase;letter-spacing:.08em;text-align:left;border-bottom:.5px solid #c8d6cc}
+
+/* ORDERS LIST VIEW */
+.orders-list{overflow-x:auto;max-height:520px;overflow-y:auto}
+.orders-list table{width:100%;border-collapse:collapse}
+.orders-list th{position:sticky;top:0;background:var(--g);color:#fff;padding:7px 10px;font-size:11px;font-weight:500;text-align:left;border-right:.5px solid rgba(255,255,255,.15)}
+.orders-list td{padding:6px 10px;font-size:12px;border-bottom:.5px solid #eee}
+.orders-list tr:nth-child(even) td{background:var(--gp)}
+.orders-list tr:hover td{background:var(--bll)}
+.dist-tag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500;background:var(--bll);color:var(--bl)}
+
+/* FOOTER */
+.footer{padding:12px 24px;background:#fff;border-top:.5px solid #e0e0e0;display:flex;gap:10px;align-items:center;justify-content:flex-end}
+.btn{height:34px;padding:0 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:.5px solid;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-sec{background:#fff;border-color:#bbb;color:#1a1a1a}
+.btn-sec:hover{background:#f5f5f5}
+.btn-pri{background:var(--g);border-color:var(--g);color:#fff}
+.btn-pri:hover{background:var(--gm)}
+.btn-danger{background:#fff;border-color:#e08080;color:var(--r)}
+.btn-danger:hover{background:var(--rl)}
+
+/* LOADING */
+.loading{padding:40px;text-align:center;color:#999;font-size:13px}
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid #ddd;border-top-color:var(--g);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transition:opacity .3s;pointer-events:none}
+.toast.ok{background:#1F4E3D;color:#fff}
+.toast.err{background:#C00000;color:#fff}
+.toast.hide{opacity:0}
+
+/* LAST UPDATE */
+.last-upd{font-size:10px;color:#999;padding:6px 24px;border-bottom:.5px solid #eee;background:#fff}
+
+/* Charts */
+.chart-wrap{padding:16px 24px;background:#fff;border-bottom:.5px solid #e0e0e0}
+.chart-title{font-size:11px;font-weight:500;color:var(--g);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.chart-box{background:var(--gp);border-radius:8px;padding:14px;border:.5px solid #d0ddd6}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bar-label{font-size:10px;color:#444;min-width:110px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;background:#e8e8e8;border-radius:3px;height:14px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s ease;background:var(--g)}
+.bar-fill.model{background:var(--bl)}
+.bar-val{font-size:10px;color:#666;min-width:28px;text-align:right}
+
+
+
+.prod-img{width:48px;height:48px;object-fit:cover;object-position:center;border-radius:5px;border:.5px solid #ddd;flex-shrink:0;cursor:pointer;transition:transform .15s;background:#f5f5f5}
+.prod-img:hover{transform:scale(1.1);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.td-info-inner{display:flex;align-items:center;gap:8px}
+.td-info-text{flex:1;min-width:0}
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;cursor:pointer}
+.lightbox.open{display:flex}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+
+/* ── MOBILE VIEW ADMIN ── */
+.view-toggle{padding:8px 24px;background:#fff;border-bottom:.5px solid #e0e0e0;display:flex;align-items:center;gap:8px}
+.view-toggle span{font-size:11px;color:#666}
+.toggle-btn{display:flex;background:#f0f0f0;border-radius:20px;padding:2px;gap:2px}
+.toggle-opt{padding:4px 12px;border-radius:16px;font-size:11px;font-weight:500;cursor:pointer;color:#666;transition:all .2s;border:none;background:none}
+.toggle-opt.active{background:#fff;color:var(--g);box-shadow:0 1px 4px rgba(0,0,0,.15);font-weight:600}
+.tbl-wrap.hide{display:none}
+.mob-admin-wrap{display:none;padding:8px 12px;max-height:520px;overflow-y:auto}
+.mob-admin-wrap.show{display:block}
+.mob-sec-hdr{font-size:10px;font-weight:600;color:var(--gm);text-transform:uppercase;letter-spacing:.08em;padding:10px 4px 4px;border-bottom:.5px solid #c8d6cc;margin-bottom:8px}
+.mob-acard{background:#fff;border-radius:10px;border:.5px solid #ddd;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.mob-acard-hdr{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--gp);border-bottom:.5px solid #e0e0e0}
+.mob-acard-img{width:52px;height:52px;object-fit:cover;border-radius:6px;border:.5px solid #ddd;flex-shrink:0;cursor:pointer}
+.mob-acard-info{flex:1;min-width:0}
+.mob-acard-title{font-size:13px;font-weight:500}
+.mob-acard-sub{font-size:10px;color:#666;margin-top:2px}
+.mob-acard-body{padding:10px 12px}
+.mob-sz-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:.5px solid #f0f0f0;font-size:12px}
+.mob-sz-row:last-child{border-bottom:none}
+.mob-sz-uk{font-weight:500;color:#444;min-width:48px}
+.mob-sz-orig{color:var(--bl);font-weight:500;min-width:52px;text-align:center}
+.mob-sz-ord{color:#5c3a00;font-weight:600;min-width:52px;text-align:center;background:var(--y);border-radius:4px;padding:1px 6px}
+.mob-sz-avail{font-weight:600;min-width:52px;text-align:center;border-radius:4px;padding:1px 6px}
+.mob-sz-avail.ok{color:var(--gm);background:var(--gl)}
+.mob-sz-avail.lo{color:var(--am);background:var(--al)}
+.mob-sz-avail.out{color:var(--r);background:var(--rl)}
+.mob-sz-avail.na{color:#ccc;background:var(--na)}
+.mob-acard-footer{padding:6px 12px;background:#f9f9f9;border-top:.5px solid #eee;display:flex;justify-content:space-between;font-size:11px;color:#666}
+.mob-col-hdrs{display:flex;justify-content:space-between;font-size:10px;color:#999;padding:0 0 4px;margin-bottom:2px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="hdr">
+  <div>
+    <h1>LOWA-BM Formulario de Pedido desde Alemania</h1>
+    <div class="hdr-sub">Pedidos en tiempo real · FW/SS 2026</div>
+  </div>
+  <div class="cs">
+    <span class="live-dot" id="live-dot" style="background:#888"></span>
+    <span id="conn-text">Conectando…</span>
+  </div>
+</div>
+
+<div class="kpi-bar">
+  <div class="kpi"><div class="kpi-label">Distribuidores activos</div><div class="kpi-val" id="kpi-dists">—</div></div>
+  <div class="kpi"><div class="kpi-label">Total pares pedidos</div><div class="kpi-val" id="kpi-pairs">—</div></div>
+  <div class="kpi"><div class="kpi-label">Modelos con pedido</div><div class="kpi-val" id="kpi-mods">—</div></div>
+
+  <div class="kpi"><div class="kpi-label">Subtotal (IVA inc.)</div><div class="kpi-val" style="font-size:14px" id="kpi-valor">—</div></div>
+  <div class="kpi"><div class="kpi-label">Total −5% (IVA inc.)</div><div class="kpi-val" style="font-size:14px;color:var(--g);font-weight:600" id="kpi-neto">—</div></div>
+  <div class="kpi"><div class="kpi-label">Última actualización</div><div class="kpi-val" style="font-size:13px;color:#666" id="kpi-upd">—</div></div>
+</div>
+
+<div style="padding:5px 24px;background:#fffde7;border-bottom:.5px solid #ffd966;font-size:11px;color:#806000;text-align:right">* Todos los precios incluyen IVA (19%)</div>
+
+<!-- CHARTS -->
+<div class="chart-wrap">
+  <div class="charts-grid">
+    <div class="chart-box">
+      <div class="chart-title">Pares pedidos por distribuidor</div>
+      <div id="chart-dists"></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title">Top modelos pedidos</div>
+      <div id="chart-models"></div>
+    </div>
+  </div>
+</div>
+
+<div class="view-toggle" id="stock-view-toggle">
+  <span>Vista:</span>
+  <div class="toggle-btn">
+    <button class="toggle-opt active" id="tog-desk" onclick="setAdminView('desktop')">🖥 Escritorio</button>
+    <button class="toggle-opt" id="tog-mob" onclick="setAdminView('mobile')">📱 Móvil</button>
+  </div>
+</div>
+<div class="tabs">
+  <div class="tab active" id="tab-stock" onclick="showTab('stock')">Stock y pedidos consolidados</div>
+  <div class="tab" id="tab-orders" onclick="showTab('orders')">Pedidos por distribuidor</div>
+</div>
+
+<!-- TAB: STOCK CONSOLIDADO -->
+<div id="view-stock">
+  <div class="toolbar">
+    <span class="tlabel">Género:</span>
+    <select id="filter-g">
+      <option value="all">Todos</option>
+      <option value="men">Hombre</option>
+      <option value="women">Mujer</option>
+    </select>
+    <span class="tlabel">Color:</span>
+    <select id="filter-c">
+      <option value="all">Todos los colores</option>
+      <option value="731">731 — coyote OP</option>
+      <option value="999">999 — schwarz</option>
+    </select>
+    <input type="search" class="search-inp" id="search-box" placeholder="Buscar modelo…" />
+    <div class="spacer"></div>
+    <button class="btn btn-sec" onclick="exportStockCSV()">↓ Exportar stock Excel</button>
+  </div>
+  <div class="tbl-wrap" id="tbl-wrap">
+    <div class="loading"><span class="spinner"></span>Cargando…</div>
+  </div>
+</div>
+<div class="mob-admin-wrap" id="mob-admin-wrap"></div>
+
+<!-- TAB: PEDIDOS POR DISTRIBUIDOR -->
+<div id="view-orders" style="display:none">
+  <div class="toolbar">
+    <span class="tlabel">Distribuidor:</span>
+    <select id="filter-dist"><option value="all">Todos</option></select>
+    <input type="search" class="search-inp" id="search-orders" placeholder="Buscar modelo…" />
+    <div class="spacer"></div>
+    <button class="btn btn-sec" onclick="exportByDist()">↓ Excel por distribuidor</button>
+    <button class="btn btn-danger" onclick="confirmClearAll()">Borrar todos los pedidos</button>
+    <button class="btn btn-sec" onclick="exportOrdersCSV()">↓ Exportar pedidos Excel</button>
+  </div>
+  <div class="orders-list" id="orders-list">
+    <div class="loading"><span class="spinner"></span>Cargando…</div>
+  </div>
+</div>
+
+<div class="last-upd" id="last-upd">Esperando datos…</div>
+
+<div class="footer">
+  <button class="btn btn-sec" onclick="loadAll()">↺ Actualizar ahora</button>
+</div>
+
+</div>
+
+<div class="toast hide" id="toast"></div>
+
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('open')">
+  <img id="lightbox-img" src="" alt="" />
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://cscqajadqxnohanpfzcv.supabase.co'
+const SUPABASE_ANON_KEY = 'sb_publishable_cW_jnEl9vnADrFJiRDu0ng_uGyS3g5n'
+// ─────────────────────────────────────────────────────────────────────────
+
+const { createClient } = supabase
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+const PRICES = {"210217_731":183743,"210227_731":206993,"310680_999":176243,"310684_731":176243,"310686_731":161243,"310850_731":176243,"310850_999":176243,"310852_731":161243,"310854_731":161243,"310854_999":161243,"310856_731":148500,"311710_999":180000,"311716_999":161243,"311884_999":161243,"311981_999":179993,"320684_731":176243,"320686_731":161243,"320850_731":176243}
+const IMAGES = {"210217_731":"https://d3c2yqbxx52o4l.cloudfront.net/catalog/product/thumbnail/01fc0744c3baa1ee32f8d28ddb1b3bc1da7b3a9e5e4cef0e7f2514a8/image/1176796/1232x750/101/95/2/1/210217_c30_0731_breacher_s_mid_2022_flat.jpg","210227_731":"https://botasmilitares.cl/cdn/shop/files/gtx2758_fd510e49-edba-45a2-b051-bbe946786b0c.jpg?v=1782671921","310680_999":"https://botasmilitares.cl/cdn/shop/files/z-8n7058.jpg?v=1782671739","310684_731":"https://botasmilitares.cl/cdn/shop/files/gtx-27737_aac908bf-c205-4957-b34c-dab086c89589.jpg?v=1782672333","310686_731":"https://botasmilitares.cl/cdn/shop/files/z-8ss1007_f8dfcb1a-1942-41ae-a1d6-6403b67cb2ca.jpg?v=1782672140","310850_731":"https://botasmilitares.cl/cdn/shop/files/zephyr-mk9213_599ed4e0-1447-411f-97ab-78596b90b05f.jpg?v=1782671629","310850_999":"https://botasmilitares.cl/cdn/shop/files/captura-de-pantalla-2024-08-08-a-la-s-3-40-42-p-m2341_e418562f-e6ee-459b-9473-8061d79b2a90.png?v=1782672328","310854_731":"https://botasmilitares.cl/cdn/shop/files/mk2mid17949.png?v=1782671079","310852_731":"https://botasmilitares.cl/cdn/shop/files/zephyr-mk9213_599ed4e0-1447-411f-97ab-78596b90b05f.jpg?v=1782671629","310854_999":"https://d3c2yqbxx52o4l.cloudfront.net/catalog/product/thumbnail/34cdb511bd3c11ebb58cce55975ae040ed07d3890db6c767ac736a09/image/422459/1232x750/101/95/3/1/310854_c30_0999_zephyr_mk2_gtx_mid_2024_flat.jpg","310856_731":"https://botasmilitares.cl/cdn/shop/files/mk2mid17949.png?v=1782671079","311710_999":"https://botasmilitares.cl/cdn/shop/files/z-8n7058.jpg?v=1782671739","311716_999":"https://botasmilitares.cl/cdn/shop/files/z6n3932_33deb08a-215b-422f-86d0-55db7e072167.jpg?v=1782672961","311884_999":"https://botasmilitares.cl/cdn/shop/files/zicon-mid-web8547_da4e788c-8ecc-4591-aa59-349cf37bf928.png?v=1782672588","311981_999":"https://botasmilitares.cl/cdn/shop/files/mesa-de-trabajo-69506_3c643b3d-502e-4bbe-aa31-3574940ee414.jpg?v=1782672667","320684_731":"https://d3c2yqbxx52o4l.cloudfront.net/catalog/product/thumbnail/f8be8b4d0dd690e89cb5049fbaa7537950dff5e769a37e6c9dc12487/image/1700106/1232x750/101/95/3/2/320684_0731_z-8s_gtx_ws_c_2021_outer.jpg","320686_731":"https://botasmilitares.cl/cdn/shop/files/z-8ss1007_f8dfcb1a-1942-41ae-a1d6-6403b67cb2ca.jpg?v=1782672140","320850_731":"https://botasmilitares.cl/cdn/shop/files/zephyr-mk9213_599ed4e0-1447-411f-97ab-78596b90b05f.jpg?v=1782671629"}
+const ALL_SIZES = ['3','3½','4','4½','5','5½','6','6½','7','7½','8','8½','9','9½','10','10½','11','11½','12']
+const WOMEN_IDS = ['320684_731','320686_731','320850_731']
+const COLOR_META = {
+  '731':{ label:'731 — coyote OP', dot:'#c8a840', cls:'c731' },
+  '999':{ label:'999 — schwarz', dot:'#888', cls:'c999' }
+}
+
+let catalog = []   // stock_available rows
+let allOrders = [] // raw orders rows
+let activeTab = 'stock'
+
+function setConn(ok) {
+  document.getElementById('live-dot').style.background = ok ? '#4ade80' : '#f87171'
+  document.getElementById('conn-text').textContent = ok ? 'En línea — tiempo real' : 'Sin conexión'
+}
+
+
+// ── ADMIN VIEW MODE ───────────────────────────────────────────────────────
+let adminViewMode = 'desktop'
+
+function setAdminView(mode) {
+  adminViewMode = mode
+  document.getElementById('tog-desk').className = 'toggle-opt' + (mode==='desktop'?' active':'')
+  document.getElementById('tog-mob').className  = 'toggle-opt' + (mode==='mobile'?' active':'')
+  document.getElementById('tbl-wrap').className  = 'tbl-wrap'  + (mode==='mobile'?' hide':'')
+  document.getElementById('mob-admin-wrap').className = 'mob-admin-wrap' + (mode==='mobile'?' show':'')
+  if (mode === 'mobile') buildMobileAdmin()
+}
+
+function buildMobileAdmin() {
+  const wrap = document.getElementById('mob-admin-wrap')
+  const rows = stockFiltered()
+  if (!rows.length) { wrap.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa">Sin modelos para este filtro</div>'; return }
+
+  let html = ''; let lastSec = ''
+  rows.forEach(item => {
+    const sec = WOMEN_IDS.includes(item.id) ? 'Mujer' : 'Hombre'
+    if (sec !== lastSec) {
+      html += `<div class="mob-sec-hdr">${sec === 'Mujer' ? 'Mujer — Ws' : 'Hombre — Men'}</div>`
+      lastSec = sec
+    }
+    const cm = COLOR_META[item.color_num] || { label:item.color_num, dot:'#aaa', cls:'' }
+    const imgUrl = IMAGES[item.id] || ''
+    let stot=0, otot=0, atot=0
+
+    html += `<div class="mob-acard">
+      <div class="mob-acard-hdr">
+        ${imgUrl ? `<img class="mob-acard-img" src="${imgUrl}" alt="${item.description}" onclick="openLightbox('${imgUrl}','${item.description}')" loading="lazy" />` : ''}
+        <div class="mob-acard-info">
+          <div class="mob-acard-title">${item.description}</div>
+          <div class="mob-acard-sub">${item.model} · <span class="cpill ${cm.cls}"><span class="cdot" style="background:${cm.dot};width:7px;height:7px;margin-right:2px"></span>${item.color_num} ${item.color_name}</span></div>
+        </div>
+      </div>
+      <div class="mob-acard-body">
+        <div class="mob-col-hdrs"><span>Talla</span><span>Stock orig.</span><span>Pedido</span><span>Disponible</span></div>`
+
+    ALL_SIZES.forEach(sz => {
+      const orig = item.original_sizes?.[sz]
+      if (orig === undefined) return
+      const ord = getOrdered(item.id, sz)
+      const av = Math.max(0, item.available_sizes?.[sz] ?? orig)
+      stot += orig||0; otot += ord; atot += av
+      const avcls = av<=0?'out':av<=3?'lo':'ok'
+      html += `<div class="mob-sz-row">
+        <span class="mob-sz-uk">UK ${sz}</span>
+        <span class="mob-sz-orig">${orig}</span>
+        <span class="mob-sz-ord">${ord||'·'}</span>
+        <span class="mob-sz-avail ${avcls}">${av}</span>
+      </div>`
+    })
+
+    const acls = atot<=0?'out':atot<=5?'lo':'ok'
+    html += `</div>
+      <div class="mob-acard-footer">
+        <span>Stock: <strong>${stot}</strong></span>
+        <span>Pedido: <strong style="color:#5c3a00">${otot||0}</strong></span>
+        <span>Disponible: <strong class="${acls==='out'?'':''}' style="color:${atot<=0?'var(--r)':atot<=5?'var(--am)':'var(--gm)'}">${atot}</strong></span>
+      </div>
+    </div>`
+  })
+
+  wrap.innerHTML = html
+}
+
+async function loadAll() {
+  const [{ data: stockData }, { data: ordersData }] = await Promise.all([
+    sb.from('stock_available').select('*'),
+    sb.from('orders').select('*').order('updated_at', { ascending: false })
+  ])
+  if (!stockData) { setConn(false); return }
+  setConn(true)
+  catalog = stockData
+  allOrders = ordersData || []
+  updateKPIs()
+  buildStockTable()
+  buildOrdersList()
+  updateDistFilter()
+  buildCharts()
+  document.getElementById('last-upd').textContent =
+    'Última actualización: ' + new Date().toLocaleTimeString('es-CL')
+}
+
+function subscribeRealtime() {
+  sb.channel('admin-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
+      await loadAll()
+    })
+    .subscribe(status => setConn(status === 'SUBSCRIBED'))
+}
+
+function openLightbox(src, alt) {
+  document.getElementById('lightbox-img').src = src
+  document.getElementById('lightbox-img').alt = alt
+  document.getElementById('lightbox').classList.add('open')
+}
+
+// ── KPIs ──────────────────────────────────────────────────────────────────
+function updateKPIs() {
+  const dists = new Set(allOrders.map(o => o.distributor_name.split('|')[0]))
+  const pairs = allOrders.reduce((s, o) => s + (o.qty||0), 0)
+  const modsWithOrders = new Set(allOrders.map(o => o.stock_id))
+
+  document.getElementById('kpi-dists').textContent = dists.size
+  document.getElementById('kpi-pairs').textContent = pairs
+  document.getElementById('kpi-mods').textContent = modsWithOrders.size
+  document.getElementById('kpi-upd').textContent = new Date().toLocaleTimeString('es-CL')
+
+  // Total valorizado pedidos
+  let totalVal = 0
+  allOrders.forEach(o => {
+    const price = PRICES[o.stock_id] || 0
+    totalVal += (o.qty || 0) * price
+  })
+  const descuento = Math.round(totalVal * 0.05)
+  const neto = Math.round(totalVal) - descuento
+  const vEl = document.getElementById('kpi-valor')
+  if (vEl) vEl.textContent = totalVal > 0 ? '$' + Math.round(totalVal).toLocaleString('es-CL') : '$0'
+  const nEl = document.getElementById('kpi-neto')
+  if (nEl) nEl.textContent = neto > 0 ? '$' + neto.toLocaleString('es-CL') : '$0'
+}
+
+// ── STOCK TABLE ───────────────────────────────────────────────────────────
+function stockFiltered() {
+  const g = document.getElementById('filter-g').value
+  const c = document.getElementById('filter-c').value
+  const q = document.getElementById('search-box').value.toLowerCase()
+  return catalog.filter(item => {
+    if (g === 'men' && WOMEN_IDS.includes(item.id)) return false
+    if (g === 'women' && !WOMEN_IDS.includes(item.id)) return false
+    if (c !== 'all' && item.color_num !== c) return false
+    if (q && !item.description.toLowerCase().includes(q) && !item.model.includes(q)) return false
+    return true
+  })
+}
+
+function getOrdered(stockId, sz) {
+  return allOrders.filter(o => o.stock_id === stockId && o.size === sz).reduce((s,o)=>s+(o.qty||0),0)
+}
+
+function buildStockTable() {
+  const wrap = document.getElementById('tbl-wrap')
+  const rows = stockFiltered()
+  if (!rows.length) { wrap.innerHTML = '<div class="loading">Sin resultados.</div>'; return }
+
+  let h = '<table><thead>'
+  h += '<tr class="grp-hdr"><th></th>'
+  h += `<th colspan="${ALL_SIZES.length+1}" style="background:rgba(31,78,61,.3)">Stock original</th>`
+  h += `<th colspan="${ALL_SIZES.length+1}" style="background:rgba(180,130,0,.35)">Total pedido</th>`
+  h += `<th colspan="${ALL_SIZES.length+1}" style="background:rgba(55,86,35,.4)">Disponible restante</th>`
+  h += '</tr><tr>'
+  h += '<th class="th-info">Modelo</th>'
+  ALL_SIZES.forEach(sz => h += `<th class="th-sz">${sz}</th>`)
+  h += '<th class="th-sz" style="min-width:48px">Total</th>'
+  ALL_SIZES.forEach(sz => h += `<th class="th-sz" style="background:#a08000">${sz}</th>`)
+  h += '<th class="th-sz" style="background:#a08000;min-width:48px">Total</th>'
+  ALL_SIZES.forEach(sz => h += `<th class="th-sz" style="background:#27521a">${sz}</th>`)
+  h += '<th class="th-sz" style="background:#27521a;min-width:48px">Disp.</th>'
+  h += '</tr></thead><tbody>'
+
+  let lastSec = ''
+  rows.forEach((item, ri) => {
+    const sec = WOMEN_IDS.includes(item.id) ? 'Mujer' : 'Hombre'
+    if (sec !== lastSec) {
+      h += `<tr class="sec-hdr"><td colspan="${3*(ALL_SIZES.length+1)+1}">${sec==='Mujer'?'Mujer — Ws':'Hombre — Men'}</td></tr>`
+      lastSec = sec
+    }
+    const cm = COLOR_META[item.color_num] || { label:item.color_num, dot:'#aaa', cls:'' }
+    const alt = ri%2===0 ? 'alt' : ''
+    const imgUrl = IMAGES[item.id] || ''
+    h += `<tr class="${alt}"><td class="td-info">
+      <div class="td-info-inner">
+        ${imgUrl ? `<img class="prod-img" src="${imgUrl}" alt="${item.description}" onclick="openLightbox('${imgUrl}','${item.description}')" loading="lazy" />` : ''}
+        <div class="td-info-text">
+          <div class="mt">${item.description}</div>
+          <div class="ms">
+            <span>${item.model}</span>
+            <span class="cpill ${cm.cls}"><span class="cdot" style="background:${cm.dot}"></span>${item.color_num} ${item.color_name}</span>
+            ${item.type?`<span style="font-size:10px;color:#aaa">${item.type}</span>`:''}
+          </div>
+        </div>
+      </div>
+    </td>`
+
+    // Original stock
+    let stot=0
+    ALL_SIZES.forEach(sz => {
+      const orig = item.original_sizes?.[sz]
+      if (orig === undefined) { h += `<td class="tsna">—</td>`; return }
+      h += `<td class="${orig>0?'ts':'ts0'}">${orig}</td>`
+      stot += orig||0
+    })
+    h += `<td class="tref">${stot}</td>`
+
+    // Orders total
+    let otot=0
+    ALL_SIZES.forEach(sz => {
+      const orig = item.original_sizes?.[sz]
+      if (orig === undefined) { h += `<td class="to na">—</td>`; return }
+      const ord = getOrdered(item.id, sz)
+      otot += ord
+      h += `<td class="to ${ord>0?'has':'none'}">${ord>0?ord:'·'}</td>`
+    })
+    h += `<td class="tord-tot">${otot||'·'}</td>`
+
+    // Available
+    let atot=0; let allNa=true
+    ALL_SIZES.forEach(sz => {
+      const orig = item.original_sizes?.[sz]
+      if (orig === undefined) { h += `<td class="ta na">—</td>`; return }
+      allNa=false
+      const av = Math.max(0, item.available_sizes?.[sz]??orig)
+      atot += av
+      const cls = av<=0?'out':av<=3?'lo':'ok'
+      h += `<td class="ta ${cls}">${av}</td>`
+    })
+    const acls = atot<=0?'out':atot<=10?'lo':'ok'
+    h += `<td class="tavail-tot ${allNa?'':acls}">${allNa?'—':atot}</td>`
+    h += '</tr>'
+  })
+  h += '</tbody></table>'
+  wrap.innerHTML = h
+}
+
+// ── ORDERS LIST ───────────────────────────────────────────────────────────
+function updateDistFilter() {
+  const sel = document.getElementById('filter-dist')
+  const cur = sel.value
+  const dists = [...new Set(allOrders.map(o => o.distributor_name.split('|')[0]))].sort()
+  sel.innerHTML = '<option value="all">Todos los distribuidores</option>' +
+    dists.map(d => `<option value="${d}"${d===cur?' selected':''}>${d}</option>`).join('')
+}
+
+function buildOrdersList() {
+  const wrap = document.getElementById('orders-list')
+  const distF = document.getElementById('filter-dist').value
+  const q = document.getElementById('search-orders').value.toLowerCase()
+  let rows = allOrders.filter(o => {
+    const dname = o.distributor_name.split('|')[0]
+    if (distF !== 'all' && dname !== distF) return false
+    if (q) {
+      const item = catalog.find(c => c.id === o.stock_id)
+      const desc = item?.description?.toLowerCase()||''
+      if (!desc.includes(q) && !o.stock_id.includes(q)) return false
+    }
+    return true
+  })
+
+  if (!rows.length) { wrap.innerHTML = '<div class="loading">Sin pedidos registrados.</div>'; return }
+
+  let h = '<table><tr>'
+  h += '<th>Distribuidor</th><th>País</th><th>Modelo</th><th>Color</th><th>Talla</th><th>Cantidad</th><th>Actualizado</th><th>Acción</th>'
+  h += '</tr>'
+  rows.forEach(o => {
+    const item = catalog.find(c => c.id === o.stock_id)
+    const dname = o.distributor_name.split('|')[0]
+    const upd = new Date(o.updated_at).toLocaleString('es-CL')
+    h += `<tr>
+      <td><span class="dist-tag">${dname}</span></td>
+      <td>${o.country||'—'}</td>
+      <td><strong>${item?.description||o.stock_id}</strong></td>
+      <td>${item?.color_num||''} ${item?.color_name||''}</td>
+      <td style="font-weight:500">UK ${o.size}</td>
+      <td style="font-weight:700;color:var(--gm)">${o.qty}</td>
+      <td style="color:#999;font-size:11px">${upd}</td>
+      <td><button class="btn btn-danger" style="height:26px;font-size:11px;padding:0 8px" onclick="deleteOrder('${o.id}')">Eliminar</button></td>
+    </tr>`
+  })
+  h += '</table>'
+  wrap.innerHTML = h
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────
+async function deleteOrder(id) {
+  if (!confirm('¿Eliminar este pedido?')) return
+  const { error } = await sb.from('orders').delete().eq('id', id)
+  if (error) { showToast('Error al eliminar', true); return }
+  showToast('Pedido eliminado', false)
+  await loadAll()
+}
+
+async function confirmClearAll() {
+  if (!confirm('¿Borrar TODOS los pedidos? Esta acción no se puede deshacer.')) return
+  const { error } = await sb.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  if (error) { showToast('Error al borrar', true); return }
+  showToast('Todos los pedidos eliminados', false)
+  await loadAll()
+}
+
+
+// ── CHARTS ────────────────────────────────────────────────────────────────
+function buildCharts() {
+  const distMap = {}
+  allOrders.forEach(o => {
+    const d = o.distributor_name.split('|')[0]
+    distMap[d] = (distMap[d]||0) + (o.qty||0)
+  })
+  const distEntries = Object.entries(distMap).sort((a,b)=>b[1]-a[1]).slice(0,8)
+  const maxDist = distEntries[0]?.[1] || 1
+  document.getElementById('chart-dists').innerHTML = distEntries.length
+    ? distEntries.map(([d,v])=>`
+        <div class="bar-row">
+          <span class="bar-label" title="${d}">${d}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(v/maxDist*100)}%"></div></div>
+          <span class="bar-val">${v}</span>
+        </div>`).join('')
+    : '<div class="no-alerts">Sin pedidos aún</div>'
+
+  const modMap = {}
+  allOrders.forEach(o => {
+    const item = catalog.find(c=>c.id===o.stock_id)
+    const lbl = item ? item.description.slice(0,22) : o.stock_id
+    modMap[lbl] = (modMap[lbl]||0) + (o.qty||0)
+  })
+  const modEntries = Object.entries(modMap).sort((a,b)=>b[1]-a[1]).slice(0,8)
+  const maxMod = modEntries[0]?.[1] || 1
+  document.getElementById('chart-models').innerHTML = modEntries.length
+    ? modEntries.map(([m,v])=>`
+        <div class="bar-row">
+          <span class="bar-label" title="${m}">${m}</span>
+          <div class="bar-track"><div class="bar-fill model" style="width:${Math.round(v/maxMod*100)}%"></div></div>
+          <span class="bar-val">${v}</span>
+        </div>`).join('')
+    : '<div class="no-alerts">Sin pedidos aún</div>'
+}
+
+function exportStockCSV() {
+  const now = new Date().toISOString().slice(0,10)
+  const wb = XLSX.utils.book_new()
+  const hdr = ['Modelo','Descripción','Color #','Color']
+  ALL_SIZES.forEach(sz => hdr.push('UK '+sz+' (orig)'))
+  ALL_SIZES.forEach(sz => hdr.push('UK '+sz+' (pedido)'))
+  ALL_SIZES.forEach(sz => hdr.push('UK '+sz+' (disp)'))
+  hdr.push('Total orig','Total pedido','Total disp')
+  const rows = [hdr]
+  catalog.forEach(item => {
+    let so=0,sp=0,sa=0
+    const origV=[],ordV=[],availV=[]
+    ALL_SIZES.forEach(sz => {
+      const o=item.original_sizes?.[sz]??''
+      const p=getOrdered(item.id,sz)
+      const a=o===''?'':(Math.max(0,item.available_sizes?.[sz]??Number(o)))
+      origV.push(o);ordV.push(p);availV.push(a)
+      if(o!=='')so+=Number(o);sp+=p;if(a!=='')sa+=Number(a)
+    })
+    rows.push([item.model,item.description,item.color_num,item.color_name,
+               ...origV,...ordV,...availV,so,sp,sa])
+  })
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols']=[{wch:10},{wch:30},{wch:8},{wch:18},
+    ...ALL_SIZES.map(()=>({wch:7})),...ALL_SIZES.map(()=>({wch:7})),...ALL_SIZES.map(()=>({wch:7})),
+    {wch:10},{wch:12},{wch:10}]
+  XLSX.utils.book_append_sheet(wb, ws, 'Stock')
+  XLSX.writeFile(wb, `LOWA_STOCK_ADMIN_${now}.xlsx`)
+}
+
+function exportOrdersCSV() {
+  const now = new Date().toISOString().slice(0,10)
+  const wb = XLSX.utils.book_new()
+  const hdr = ['Distribuidor','País','Contacto','Modelo','Descripción','Color #','Color','Talla','Cantidad','Actualizado']
+  const rows = [hdr]
+  allOrders.forEach(o => {
+    const item = catalog.find(c=>c.id===o.stock_id)
+    const dname = o.distributor_name.split('|')[0]
+    rows.push([dname,o.country||'',o.contact||'',item?.model||o.stock_id,
+               item?.description||'',item?.color_num||'',item?.color_name||'',
+               o.size,o.qty,new Date(o.updated_at).toLocaleString('es-CL')])
+  })
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols']=[{wch:20},{wch:12},{wch:20},{wch:10},{wch:30},{wch:8},{wch:14},{wch:8},{wch:8},{wch:18}]
+  XLSX.utils.book_append_sheet(wb, ws, 'Pedidos')
+  XLSX.writeFile(wb, `LOWA_PEDIDOS_${now}.xlsx`)
+}
+
+function dl(csv, name) {
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([csv],{type:'text/csv'})),
+    download: name
+  })
+  a.click()
+}
+
+function showToast(msg, err) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.className = 'toast ' + (err?'err':'ok')
+  setTimeout(() => t.className='toast hide', 3000)
+}
+
+function showTab(tab) {
+  activeTab = tab
+  document.getElementById('view-stock').style.display = tab==='stock'?'':'none'
+  document.getElementById('view-orders').style.display = tab==='orders'?'':'none'
+  document.getElementById('tab-stock').className = 'tab' + (tab==='stock'?' active':'')
+  document.getElementById('tab-orders').className = 'tab' + (tab==='orders'?' active':'')
+}
+
+// Filter events
+document.getElementById('filter-g').addEventListener('change', () => { buildStockTable(); if(adminViewMode==='mobile') buildMobileAdmin() })
+document.getElementById('filter-c').addEventListener('change', () => { buildStockTable(); if(adminViewMode==='mobile') buildMobileAdmin() })
+document.getElementById('search-box').addEventListener('input', () => { buildStockTable(); if(adminViewMode==='mobile') buildMobileAdmin() })
+document.getElementById('filter-dist').addEventListener('change', buildOrdersList)
+document.getElementById('search-orders').addEventListener('input', buildOrdersList)
+
+if (window.innerWidth < 768) { adminViewMode='mobile'; document.getElementById('tog-desk').className='toggle-opt'; document.getElementById('tog-mob').className='toggle-opt active' }
+loadAll().then(() => subscribeRealtime())
+
+function exportByDist() {
+  const dists = [...new Set(allOrders.map(o=>o.distributor_name.split('|')[0]))].sort()
+  if (!dists.length) { showToast('No hay pedidos para exportar', true); return }
+  const now = new Date().toISOString().slice(0,10)
+  const wb = XLSX.utils.book_new()
+  dists.forEach(dist => {
+    const distOrders = allOrders.filter(o=>o.distributor_name.split('|')[0]===dist)
+    const byStock = {}
+    distOrders.forEach(o => {
+      if (!byStock[o.stock_id]) byStock[o.stock_id]={}
+      byStock[o.stock_id][o.size]=(byStock[o.stock_id][o.size]||0)+(o.qty||0)
+    })
+    const hdr = ['Modelo','Descripción','Color #','Color']
+    ALL_SIZES.forEach(sz => hdr.push('UK '+sz))
+    hdr.push('TOTAL','P. Unit. (IVA inc.)','Subtotal')
+    const rows = [[`Distribuidor: ${dist}  |  Fecha: ${now}`],[],hdr]
+    let grandTotal=0,grandValue=0
+    Object.entries(byStock).forEach(([sid,sizes])=>{
+      const item=catalog.find(c=>c.id===sid)
+      const price=PRICES[sid]||0
+      let tot=0;const vals=[]
+      ALL_SIZES.forEach(sz=>{const v=sizes[sz]||0;vals.push(v||'');tot+=v})
+      grandTotal+=tot;grandValue+=tot*price
+      rows.push([item?.model||sid,item?.description||sid,item?.color_num||'',item?.color_name||'',
+                 ...vals,tot,price,tot*price])
+    })
+    rows.push([])
+    const pad=5+ALL_SIZES.length
+    const desc=Math.round(grandValue*0.05)
+    const neto=Math.round(grandValue)-desc
+    rows.push([...Array(pad).fill(''),'Total pares','',grandTotal])
+    rows.push([...Array(pad).fill(''),'Subtotal (IVA inc.)','',grandValue])
+    rows.push([...Array(pad).fill(''),'Descuento 5%','',-desc])
+    rows.push([...Array(pad).fill(''),'TOTAL (IVA inc.)','',neto])
+    const ws=XLSX.utils.aoa_to_sheet(rows)
+    ws['!cols']=[{wch:10},{wch:30},{wch:8},{wch:18},...ALL_SIZES.map(()=>({wch:6})),{wch:8},{wch:16},{wch:14}]
+    const sheetName=dist.slice(0,31).replace(/[\[\]\*\/\\\?:]/g,'_')
+    XLSX.utils.book_append_sheet(wb,ws,sheetName)
+  })
+  XLSX.writeFile(wb,`LOWA_PEDIDOS_POR_DISTRIBUIDOR_${now}.xlsx`)
+  showToast(`Excel generado con ${dists.length} distribuidores`, false)
+}
+
+
+</script>
+</body>
+</html>

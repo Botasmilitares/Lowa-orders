@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LOWA-BM Formulario de Pedido desde Alemania</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#1F4E3D;--green-mid:#375623;--green-light:#E2EFDA;--green-pale:#F2F7F2;
+  --yellow:#FFD966;--yellow-light:#FFFF99;
+  --red:#C00000;--red-light:#FFCCCC;
+  --amber:#BF8F00;--amber-light:#FFEB9C;
+  --gray-na:#E8E8E8;--blue:#1F497D;--blue-light:#DCE6F1;
+  --font:Arial,'Helvetica Neue',sans-serif;
+}
+body{font-family:var(--font);font-size:13px;color:#1a1a1a;background:#f4f4f2;min-height:100vh}
+.app{max-width:1400px;margin:0 auto;background:#fff;min-height:100vh}
+
+/* HEADER */
+.header{background:var(--green);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.header h1{font-size:16px;font-weight:500}
+.header-sub{font-size:11px;opacity:.7;margin-top:2px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.conn-status{font-size:11px;color:rgba(255,255,255,.8);display:flex;align-items:center}
+
+/* DIST FORM */
+.dist-section{padding:14px 24px;background:var(--green-pale);border-bottom:1px solid #d0ddd6}
+.section-label{font-size:11px;font-weight:500;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.dist-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dist-fields input{width:100%;height:34px;padding:0 10px;font-size:13px;border:1px solid #b8ccbf;border-radius:6px;background:#fff;color:#1a1a1a}
+.dist-fields input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 2px rgba(31,78,61,.12)}
+.dist-fields input::placeholder{color:#aaa}
+.dist-fields input.required-error{border-color:#C00000 !important;background:#fff8f8;box-shadow:0 0 0 2px rgba(192,0,0,.15) !important}
+.required-msg{display:none;color:#C00000;font-size:11px;font-weight:500;margin-top:4px}
+.required-msg.show{display:block}
+
+/* TOOLBAR */
+.toolbar{padding:10px 24px;background:#fff;border-bottom:.5px solid #e0e0e0;display:flex;flex-direction:column;gap:8px}
+.toolbar-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tlabel{font-size:11px;color:#666;white-space:nowrap;min-width:44px}
+.badge-row{display:flex;gap:5px;flex-wrap:wrap}
+.badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:1.5px solid transparent;transition:all .15s;user-select:none}
+.badge-g{background:var(--green-pale);color:var(--green-mid);border-color:#c0d6c8}
+.badge-g.active-all{background:var(--green);color:#fff;border-color:var(--green)}
+.badge-g.active-men{background:var(--blue-light);color:var(--blue);border-color:#b5d4f4}
+.badge-g.active-women{background:#FCE4D6;color:#843c1d;border-color:#f0b89a}
+.badge-c{background:#f5f5f5;color:#555;border-color:#ddd}
+.badge-c.c-active{border-width:2px}
+.badge-c.c731.c-active{background:#e8d8b0;color:#6b4c00;border-color:#c8a840}
+.badge-c.c999.c-active{background:#e0e0e0;color:#333;border-color:#999}
+.badge-c.c-dim{opacity:.4}
+.cdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;border:1px solid rgba(0,0,0,.12);vertical-align:middle}
+.search-inp{height:30px;padding:0 10px;font-size:12px;border:1px solid #ddd;border-radius:6px;min-width:180px;flex:1}
+.search-inp:focus{outline:none;border-color:var(--green)}
+
+/* WARNING */
+.warn-bar{display:none;margin:6px 24px 0;padding:8px 12px;border-radius:6px;background:var(--red-light);color:var(--red);font-size:12px;border-left:3px solid var(--red);font-weight:500}
+.warn-bar.show{display:block}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;max-height:440px;overflow-y:auto}
+table{width:100%;border-collapse:collapse}
+thead th{position:sticky;top:0;z-index:10;background:var(--green);color:#fff;font-weight:500;font-size:11px;text-align:center;padding:6px 3px;white-space:nowrap;border-right:.5px solid rgba(255,255,255,.15)}
+thead th.th-info{text-align:left;padding-left:10px;min-width:180px;position:sticky;left:0;z-index:20;background:var(--green)}
+thead th.th-sz{width:40px;min-width:36px}
+.grp-hdr th{background:rgba(0,0,0,.22);font-size:10px;letter-spacing:.05em;padding:4px}
+tbody tr:hover{background:rgba(31,78,61,.035)}
+tbody tr.alt{background:var(--green-pale)}
+td{border-right:.5px solid #eaeaea;border-bottom:.5px solid #eee;padding:0;text-align:center;font-size:12px}
+td.td-info{text-align:left;position:sticky;left:0;background:inherit;z-index:5;padding:5px 8px;min-width:180px;border-right:1.5px solid #c8d8cc}
+.mt{font-size:12px;font-weight:500;color:#1a1a1a}
+.ms{font-size:10px;color:#666;margin-top:1px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.cpill{display:inline-flex;align-items:center;padding:1px 6px;border-radius:3px;font-size:10px}
+.cpill.c731{background:#e8d8b0;color:#6b4c00}
+.cpill.c999{background:#e0e0e0;color:#333}
+td.ts{font-size:11px;color:var(--blue);font-weight:500;background:var(--blue-light)}
+td.ts0{font-size:10px;color:#bbb;background:#f8f8f8}
+td.tsna{background:var(--gray-na);color:#ccc;font-size:10px}
+td.oc{background:var(--yellow-light);padding:2px}
+td.oc input{width:100%;height:28px;border:none;background:transparent;text-align:center;font-size:12px;font-weight:600;color:#1a1a1a;outline:none}
+td.oc input:focus{background:rgba(255,255,255,.8)}
+td.oc.over{background:var(--red-light)}
+td.oc.over input{color:var(--red)}
+td.ona{background:var(--gray-na)}
+td.df{font-size:11px;font-weight:500}
+td.df.pos{color:var(--green-mid);background:var(--green-light)}
+td.df.zer{color:var(--amber);background:var(--amber-light)}
+td.df.neg{color:var(--red);background:var(--red-light);font-weight:700}
+td.df.na{background:var(--gray-na);color:#ccc}
+td.tref{background:#dbe8f5;color:var(--blue);font-size:11px;font-weight:600;padding:0 5px}
+td.tord{background:var(--yellow);color:#5c3a00;font-size:12px;font-weight:700;padding:0 5px}
+td.tdif.pos{background:#c0dd97;color:var(--green-mid);font-weight:700;padding:0 5px;font-size:11px}
+td.tdif.zer{background:var(--amber-light);color:var(--amber);font-weight:700;padding:0 5px;font-size:11px}
+td.tdif.neg{background:var(--red-light);color:var(--red);font-weight:700;padding:0 5px;font-size:11px}
+tr.sec-hdr td{background:rgba(31,78,61,.06);padding:4px 10px;font-size:10px;font-weight:600;color:var(--green-mid);text-transform:uppercase;letter-spacing:.08em;text-align:left;border-bottom:.5px solid #c8d6cc}
+
+/* SUMMARY BAR */
+.sum-bar{padding:10px 24px;background:var(--green);color:#fff;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.si{display:flex;flex-direction:column;align-items:center;min-width:72px}
+.sl{font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.06em}
+.sv{font-size:18px;font-weight:500}
+.sv.warn{color:var(--yellow)}
+.sv.err{color:#ffaaaa}
+
+/* LEGEND */
+.legend{padding:8px 24px;background:var(--green-pale);border-top:.5px solid #d0ddd6;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.li{display:flex;align-items:center;gap:5px;font-size:10px;color:#666}
+.lsw{width:13px;height:13px;border-radius:3px;border:.5px solid rgba(0,0,0,.1);flex-shrink:0}
+
+/* FOOTER */
+.footer{padding:12px 24px;background:#fff;border-top:.5px solid #e0e0e0;display:flex;gap:10px;align-items:center;justify-content:flex-end}
+.btn{height:34px;padding:0 16px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:.5px solid;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-sec{background:#fff;border-color:#bbb;color:#1a1a1a}
+.btn-sec:hover{background:#f5f5f5}
+.btn-pri{background:var(--green);border-color:var(--green);color:#fff}
+.btn-pri:hover{background:var(--green-mid)}
+.btn-pri:disabled{opacity:.4;cursor:not-allowed}
+
+/* LOADING */
+.loading{padding:40px;text-align:center;color:#999;font-size:13px}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid #ddd;border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transition:opacity .3s;pointer-events:none}
+.toast.ok{background:#1F4E3D;color:#fff}
+.toast.err{background:#C00000;color:#fff}
+.toast.hide{opacity:0}
+
+/* ── CONFIRM MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:90%;max-width:780px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{background:var(--g);color:#fff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-hdr h2{font-size:14px;font-weight:500}
+.modal-close{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1;opacity:.8}
+.modal-close:hover{opacity:1}
+.modal-body{overflow-y:auto;padding:0}
+.modal-footer{padding:12px 20px;border-top:.5px solid #e0e0e0;display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;background:#fafafa}
+.mod-info{padding:12px 20px;background:var(--gp);border-bottom:.5px solid #d0ddd6;font-size:12px;color:#444;display:flex;gap:20px;flex-wrap:wrap}
+.mod-info span{display:flex;flex-direction:column}
+.mod-info strong{font-size:14px;color:var(--g)}
+
+/* Model cards inside modal */
+.model-card{border-bottom:.5px solid #eee}
+.model-card-hdr{padding:8px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:background .1s}
+.model-card-hdr:hover{background:var(--gp)}
+.model-card-hdr.open{background:var(--gl)}
+.mch-left{display:flex;align-items:center;gap:10px}
+.mch-title{font-size:12px;font-weight:500;color:#1a1a1a}
+.mch-sub{font-size:10px;color:#666}
+.mch-pairs{font-size:12px;font-weight:600;color:var(--gm);background:var(--gl);padding:2px 8px;border-radius:12px}
+.mch-value{font-size:12px;color:#444}
+.mch-arrow{font-size:10px;color:#999;transition:transform .2s}
+.mch-arrow.open{transform:rotate(180deg)}
+.model-card-body{display:none;padding:8px 20px 14px;background:#fafffe}
+.model-card-body.open{display:block}
+.sz-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.sz-chip{display:flex;flex-direction:column;align-items:center;min-width:42px;padding:4px 6px;border-radius:6px;background:var(--yl);border:.5px solid #ffd966}
+.sz-chip .sz-lbl{font-size:9px;color:#888}
+.sz-chip .sz-qty{font-size:14px;font-weight:700;color:#5c3a00}
+
+/* Pricing summary */
+.price-summary{padding:12px 20px;background:#fff;border-top:1px solid #e0e0e0}
+.price-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;color:#444}
+.price-row.total{font-size:15px;font-weight:600;color:var(--g);border-top:1px solid #d0ddd6;margin-top:6px;padding-top:8px}
+.price-row.discount{color:#C00000}
+
+/* Product image thumbnail */
+.prod-img{width:56px;height:56px;object-fit:cover;object-position:center;border-radius:6px;border:.5px solid #ddd;flex-shrink:0;cursor:pointer;transition:transform .15s;background:#f5f5f5}
+.prod-img:hover{transform:scale(1.08);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.td-info-inner{display:flex;align-items:center;gap:8px}
+.td-info-text{flex:1;min-width:0}
+
+/* Image lightbox */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;align-items:center;justify-content:center;cursor:pointer}
+.lightbox.open{display:flex}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+
+/* ── MOBILE VIEW ── */
+.view-toggle{padding:8px 24px;background:#fff;border-bottom:.5px solid #e0e0e0;display:flex;align-items:center;gap:8px}
+.view-toggle span{font-size:11px;color:#666}
+.toggle-btn{display:flex;background:#f0f0f0;border-radius:20px;padding:2px;gap:2px}
+.toggle-opt{padding:4px 12px;border-radius:16px;font-size:11px;font-weight:500;cursor:pointer;color:#666;transition:all .2s;border:none;background:none}
+.toggle-opt.active{background:#fff;color:var(--g);box-shadow:0 1px 4px rgba(0,0,0,.15);font-weight:600}
+
+/* Mobile cards */
+.mobile-wrap{display:none;padding:8px 12px;max-height:520px;overflow-y:auto}
+.mobile-wrap.show{display:block}
+.tbl-wrap.hide{display:none}
+
+.mob-sec-hdr{font-size:10px;font-weight:600;color:var(--gm);text-transform:uppercase;letter-spacing:.08em;padding:10px 4px 4px;border-bottom:.5px solid #c8d6cc;margin-bottom:8px}
+.mob-card{background:#fff;border-radius:10px;border:.5px solid #ddd;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.mob-card-hdr{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--gp);border-bottom:.5px solid #e0e0e0}
+.mob-card-img{width:52px;height:52px;object-fit:cover;border-radius:6px;border:.5px solid #ddd;flex-shrink:0;cursor:pointer}
+.mob-card-info{flex:1;min-width:0}
+.mob-card-title{font-size:13px;font-weight:500;color:#1a1a1a}
+.mob-card-sub{font-size:10px;color:#666;margin-top:2px;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.mob-card-price{font-size:11px;color:var(--gm);font-weight:500;margin-top:3px}
+.mob-card-body{padding:10px 12px}
+.mob-sz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:6px}
+.mob-sz-cell{border-radius:7px;overflow:hidden;border:.5px solid #ddd}
+.mob-sz-label{background:var(--bl);color:#fff;font-size:9px;font-weight:500;text-align:center;padding:2px 0}
+.mob-sz-stock{background:var(--bll);color:var(--bl);font-size:10px;text-align:center;padding:2px 0}
+.mob-sz-stock.zero{background:#f5f5f5;color:#bbb}
+.mob-sz-stock.na{background:var(--na);color:#ccc}
+.mob-sz-input{width:100%;border:none;border-top:.5px solid #ffd966;background:var(--yl);text-align:center;font-size:13px;font-weight:600;color:#5c3a00;padding:4px 0;outline:none}
+.mob-sz-input:focus{background:#fff9e0}
+.mob-sz-input.over{background:var(--rl);color:var(--r)}
+.mob-sz-input:disabled{background:var(--na);color:#ccc;cursor:not-allowed}
+.mob-card-footer{padding:6px 12px;background:#f9f9f9;border-top:.5px solid #eee;display:flex;justify-content:space-between;align-items:center}
+.mob-footer-pairs{font-size:12px;font-weight:600;color:var(--gm)}
+.mob-footer-value{font-size:11px;color:#666}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="header">
+  <div>
+    <h1>LOWA-BM Formulario de Pedido desde Alemania</h1>
+    <div class="header-sub">Ingrese sus cantidades por talla · El stock se descuenta en tiempo real</div>
+  </div>
+  <div class="conn-status" id="conn-status">
+    <span class="live-dot" id="live-dot" style="background:#888"></span>
+    <span id="conn-text">Conectando…</span>
+  </div>
+</div>
+
+<div class="dist-section">
+  <div class="section-label">Datos del distribuidor</div>
+  <div class="dist-fields">
+    <input id="d-name" placeholder="Nombre del distribuidor *" required />
+    <input id="d-country" placeholder="País" />
+    <input id="d-contact" placeholder="Contacto / email" />
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="toolbar-row">
+    <span class="tlabel">Género:</span>
+    <div class="badge-row" id="filter-g">
+      <span class="badge badge-g active-all" data-g="all">Todos</span>
+      <span class="badge badge-g" data-g="men">Hombre</span>
+      <span class="badge badge-g" data-g="women">Mujer</span>
+    </div>
+    <input type="search" class="search-inp" id="search-box" placeholder="Buscar modelo o código…" />
+  </div>
+  <div class="toolbar-row">
+    <span class="tlabel">Color:</span>
+    <div class="badge-row" id="filter-c"></div>
+  </div>
+</div>
+
+<div class="view-toggle">
+  <span>Vista:</span>
+  <div class="toggle-btn">
+    <button class="toggle-opt active" id="tog-desk" onclick="setView('desktop')">🖥 Escritorio</button>
+    <button class="toggle-opt" id="tog-mob" onclick="setView('mobile')">📱 Móvil</button>
+  </div>
+</div>
+
+<div class="warn-bar" id="warn-bar">⚠ Algunas tallas superan el stock disponible — revise las celdas en rojo.</div>
+
+<div class="tbl-wrap" id="tbl-wrap">
+  <div class="loading"><span class="spinner"></span>Cargando catálogo…</div>
+</div>
+
+<div style="padding:5px 24px;background:#fffde7;border-top:.5px solid #ffd966;font-size:11px;color:#806000;text-align:right">* Todos los precios incluyen IVA (19%)</div>
+<div class="mobile-wrap" id="mobile-wrap"></div>
+<div class="legend">
+  <span class="li"><span class="lsw" style="background:var(--blue-light);border-color:#b5d4f4"></span>Stock disponible</span>
+  <span class="li"><span class="lsw" style="background:var(--yellow-light);border-color:#ffd966"></span>Su pedido</span>
+  <span class="li"><span class="lsw" style="background:var(--green-light);border-color:#a0c878"></span>Saldo restante</span>
+  <span class="li"><span class="lsw" style="background:var(--amber-light);border-color:#f0c040"></span>Stock agotado</span>
+  <span class="li"><span class="lsw" style="background:var(--red-light);border-color:#e08080"></span>Excede stock</span>
+  <span class="li"><span class="lsw" style="background:var(--gray-na)"></span>No disponible</span>
+</div>
+
+<div class="sum-bar">
+  <div class="si"><span class="sl">Modelos pedidos</span><span class="sv" id="sm-mods">0</span></div>
+  <div class="si"><span class="sl">Total pares</span><span class="sv" id="sm-pairs">0</span></div>
+  <div class="si"><span class="sl">Stock total</span><span class="sv" id="sm-stock">0</span></div>
+  <div class="si"><span class="sl">Saldo restante</span><span class="sv" id="sm-diff">0</span></div>
+  <div style="flex:1"></div>
+  <div class="si"><span class="sl">Subtotal (IVA inc.)</span><span class="sv" id="sm-valor" style="font-size:13px">$0</span></div>
+  <div class="si"><span class="sl">Descuento 5%</span><span class="sv" id="sm-descuento" style="font-size:13px;color:#FFD966">-$0</span></div>
+  <div class="si" style="border-left:1px solid rgba(255,255,255,.2);padding-left:16px"><span class="sl" style="font-size:11px;font-weight:600">TOTAL (IVA inc.)</span><span class="sv" id="sm-neto" style="font-size:18px;color:#FFD966;font-weight:700">$0</span></div>
+  <div class="si"><span class="sl" style="color:rgba(255,255,255,.55);font-size:9px">⚠ tallas excedidas</span><span class="sv err" id="sm-over">0</span></div>
+</div>
+
+<div class="footer">
+  <button class="btn btn-sec" onclick="clearOrders()">Limpiar pedido</button>
+  <button class="btn btn-sec" onclick="exportCSV()">↓ Exportar Excel</button>
+  <button class="btn btn-pri" id="btn-submit" onclick="submitOrder()" disabled>Enviar pedido →</button>
+</div>
+
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2>Resumen de pedido — confirmar antes de enviar</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="mod-info" id="modal-dist-info"></div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="price-summary" id="modal-pricing"></div>
+    <div class="modal-footer">
+      <button class="btn btn-sec" onclick="closeModal()">← Volver a editar</button>
+      <button class="btn btn-sec" onclick="exportCSV()">↓ Exportar Excel</button>
+      <button class="btn btn-pri" id="modal-send-btn" onclick="sendOrder()">Confirmar y enviar pedido ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast hide" id="toast"></div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('open')">
+  <img id="lightbox-img" src="" alt="" />
+</div>
+
+<script>
+// ── CONFIG — reemplazar con tus claves de Supabase ──────────────────────
+const SUPABASE_URL = 'https://cscqajadqxnohanpfzcv.supabase.co'
+const SUPABASE_ANON_KEY = 'sb_publishable_cW_jnEl9vnADrFJiRDu0ng_uGyS3g5n'
+// ────────────────────────────────────────────────────────────────────────
+
+const { createClient } = supabase
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+const PRICES = {"210217_731":183743,"210227_731":206993,"310680_999":176243,"310684_731":176243,"310686_731":161243,"310850_731":176243,"310850_999":176243,"310852_731":161243,"310854_731":161243,"310854_999":161243,"310856_731":148500,"311710_999":180000,"311716_999":161243,"311884_999":161243,"311981_999":179993,"320684_731":176243,"320686_731":161243,"320850_731":176243}
+const IMAGES = {"210217_731":"https://d3c2yqbxx52o4l.cloudfront.net/catalog/product/thumbnail/01fc0744c3baa1ee32f8d28ddb1b3bc1da7b3a9e5e4cef0e7f2514a8/image/1176796/1232x750/101/95/2/1/210217_c30_0731_breacher_s_mid_2022_flat.jpg","210227_731":"https://botasmilitares.cl/cdn/shop/files/gtx2758_fd510e49-edba-45a2-b051-bbe946786b0c.jpg?v=1782671921","310680_999":"https://botasmilitares.cl/cdn/shop/files/z-8n7058.jpg?v=1782671739","310684_731":"https://botasmilitares.cl/cdn/shop/files/gtx-27737_aac908bf-c205-4957-b34c-dab086c89589.jpg?v=1782672333","310686_731":"https://botasmilitares.cl/cdn/shop/files/z-8ss1007_f8dfcb1a-1942-41ae-a1d6-6403b67cb2ca.jpg?v=1782672140","310850_731":"https://botasmilitares.cl/cdn/shop/files/zephyr-mk9213_599ed4e0-1447-411f-97ab-78596b90b05f.jpg?v=1782671629","310850_999":"https://botasmilitares.cl/cdn/shop/files/captura-de-pantalla-2024-08-08-a-la-s-3-40-42-p-m2341_e418562f-e6ee-459b-9473-8061d79b2a90.png?v=1782672328","310854_731":"https://botasmilitares.cl/cdn/shop/files/mk2mid17949.png?v=1782671079","310852_731":"https://botasmilitares.cl/cdn/shop/files/zephyr-mk9213_599ed4e0-1447-411f-97ab-78596b90b05f.jpg?v=1782671629","310854_999":"https://d3c2yqbxx52o4l.cloudfront.net/catalog/product/thumbnail/34cdb511bd3c11ebb58cce55975ae040ed07d3890db6c767ac736a09/image/422459/1232x750/101/95/3/1/310854_c30_0999_zephyr_mk2_gtx_mid_2024_flat.jpg","310856_731":"https://botasmilitares.cl/cdn/shop/files/mk2mid17949.png?v=1782671079","311710_999":"https://botasmilitares.cl/cdn/shop/files/z-8n7058.jpg?v=1782671739","311716_999":"https://botasmilitares.cl/cdn/shop/files/z6n3932_33deb08a-215b-422f-86d0-55db7e072167.jpg?v=1782672961","311884_999":"https://botasmilitares.cl/cdn/shop/files/zicon-mid-web8547_da4e788c-8ecc-4591-aa59-349cf37bf928.png?v=1782672588","311981_999":"https://botasmilitares.cl/cdn/shop/files/mesa-de-trabajo-69506_3c643b3d-502e-4bbe-aa31-3574940ee414.jpg?v=1782672667","320684_731":"https://d3c2yqbxx52o4l.cloudfront.net/catalog/product/thumbnail/f8be8b4d0dd690e89cb5049fbaa7537950dff5e769a37e6c9dc12487/image/1700106/1232x750/101/95/3/2/320684_0731_z-8s_gtx_ws_c_2021_outer.jpg","320686_731":"https://botasmilitares.cl/cdn/shop/files/z-8ss1007_f8dfcb1a-1942-41ae-a1d6-6403b67cb2ca.jpg?v=1782672140","320850_731":"https://botasmilitares.cl/cdn/shop/files/zephyr-mk9213_599ed4e0-1447-411f-97ab-78596b90b05f.jpg?v=1782671629"}
+const ALL_SIZES = ['3','3½','4','4½','5','5½','6','6½','7','7½','8','8½','9','9½','10','10½','11','11½','12']
+const WOMEN_IDS = ['320684_731','320686_731','320850_731']
+const COLOR_META = {
+  '731':{ label:'731 — coyote OP', dot:'#c8a840', cls:'c731' },
+  '999':{ label:'999 — schwarz',   dot:'#888',    cls:'c999' }
+}
+
+let catalog = []         // [{id, model, description, color_num, color_name, type, original_sizes, available_sizes}]
+let orders = {}          // {stock_id: {size: qty}}  — pedido del distribuidor actual
+let activeG = 'all'
+let activeColors = new Set(['all'])
+let searchTerm = ''
+let distId = 'dist_' + Math.random().toString(36).slice(2,8)  // id de sesión anónimo
+let saveTimers = {}
+
+function openLightbox(src, alt) {
+  document.getElementById('lightbox-img').src = src
+  document.getElementById('lightbox-img').alt = alt
+  document.getElementById('lightbox').classList.add('open')
+}
+
+// ── CONNECTION ───────────────────────────────────────────────────────────
+function setConn(ok) {
+  document.getElementById('live-dot').style.background = ok ? '#4ade80' : '#f87171'
+  document.getElementById('conn-text').textContent = ok ? 'En línea — tiempo real' : 'Sin conexión'
+}
+
+// ── LOAD CATALOG ─────────────────────────────────────────────────────────
+
+// ── VIEW MODE ─────────────────────────────────────────────────────────────
+let viewMode = 'desktop'
+
+function setView(mode) {
+  viewMode = mode
+  document.getElementById('tog-desk').className = 'toggle-opt' + (mode==='desktop'?' active':'')
+  document.getElementById('tog-mob').className  = 'toggle-opt' + (mode==='mobile'?' active':'')
+  document.getElementById('tbl-wrap').className  = 'tbl-wrap'  + (mode==='mobile'?' hide':'')
+  document.getElementById('mobile-wrap').className = 'mobile-wrap' + (mode==='mobile'?' show':'')
+  if (mode === 'mobile') buildMobileView()
+}
+
+function buildMobileView() {
+  const wrap = document.getElementById('mobile-wrap')
+  const rows = filtered()
+  if (!rows.length) { wrap.innerHTML = '<div style="padding:20px;text-align:center;color:#aaa">Sin modelos para este filtro</div>'; return }
+
+  let html = ''; let lastSec = ''
+  rows.forEach(item => {
+    const sec = WOMEN_IDS.includes(item.id) ? 'Mujer' : 'Hombre'
+    if (sec !== lastSec) {
+      html += `<div class="mob-sec-hdr">${sec === 'Mujer' ? 'Mujer — Ws' : 'Hombre — Men'}</div>`
+      lastSec = sec
+    }
+    const cm = COLOR_META[item.color_num] || { label:item.color_num, dot:'#aaa', cls:'' }
+    const price = PRICES[item.id] || 0
+    const imgUrl = IMAGES[item.id] || ''
+    let pairs = 0; let value = 0
+    ALL_SIZES.forEach(sz => { const ord = getMyOrder(item.id, sz); pairs += ord; value += ord * price })
+
+    html += `<div class="mob-card">
+      <div class="mob-card-hdr">
+        ${imgUrl ? `<img class="mob-card-img" src="${imgUrl}" alt="${item.description}" onclick="openLightbox('${imgUrl}','${item.description}')" loading="lazy" />` : ''}
+        <div class="mob-card-info">
+          <div class="mob-card-title">${item.description}</div>
+          <div class="mob-card-sub">
+            <span>${item.model}</span>
+            <span class="cpill ${cm.cls}"><span class="cdot" style="background:${cm.dot};width:7px;height:7px;margin-right:2px"></span>${item.color_num} ${item.color_name}</span>
+          </div>
+          ${price ? `<div class="mob-card-price">$${price.toLocaleString('es-CL')} (IVA inc.)</div>` : ''}
+        </div>
+      </div>
+      <div class="mob-card-body"><div class="mob-sz-grid">`
+
+    ALL_SIZES.forEach(sz => {
+      const avail = getAvail(item, sz)
+      const ord = getMyOrder(item.id, sz)
+      if (avail === null) {
+        html += `<div class="mob-sz-cell">
+          <div class="mob-sz-label">UK ${sz}</div>
+          <div class="mob-sz-stock na">—</div>
+          <input class="mob-sz-input" type="number" disabled value="" />
+        </div>`
+      } else {
+        const over = ord > avail ? 'over' : ''
+        html += `<div class="mob-sz-cell">
+          <div class="mob-sz-label">UK ${sz}</div>
+          <div class="mob-sz-stock ${avail===0?'zero':''}">${avail}</div>
+          <input class="mob-sz-input ${over}" type="number" min="0" max="${avail}" step="1"
+            value="${ord||''}" placeholder=""
+            data-id="${item.id}" data-sz="${sz.replace('½','HALF')}" data-max="${avail}" />
+        </div>`
+      }
+    })
+
+    html += `</div></div>
+      <div class="mob-card-footer">
+        <span class="mob-footer-pairs">${pairs > 0 ? pairs + ' pares' : 'Sin pedir'}</span>
+        <span class="mob-footer-value">${value > 0 ? '$' + value.toLocaleString('es-CL') : ''}</span>
+      </div>
+    </div>`
+  })
+
+  wrap.innerHTML = html
+
+  wrap.querySelectorAll('input[type=number]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const id = inp.dataset.id
+      const sz = inp.dataset.sz.replace('HALF','½')
+      const maxVal = parseInt(inp.dataset.max) || 0
+      let v = Math.max(0, parseInt(inp.value)||0)
+      if (v > maxVal) { v = maxVal; inp.value = maxVal > 0 ? maxVal : '' }
+      if (!orders[id]) orders[id] = {}
+      orders[id][sz] = v
+      scheduleSave(id, sz, v)
+      const card = inp.closest('.mob-card')
+      const price = PRICES[id] || 0
+      let tp = 0; let tv = 0
+      card.querySelectorAll('input[type=number]').forEach(i => { const q=parseInt(i.value)||0; tp+=q; tv+=q*price })
+      card.querySelector('.mob-footer-pairs').textContent = tp > 0 ? tp + ' pares' : 'Sin pedir'
+      card.querySelector('.mob-footer-value').textContent = tv > 0 ? '$' + tv.toLocaleString('es-CL') : ''
+      inp.className = 'mob-sz-input' + (v > maxVal ? ' over' : '')
+      updateSummary()
+      checkOver()
+    })
+  })
+}
+
+async function if (window.innerWidth < 768) { viewMode = 'mobile'; document.getElementById('tog-desk').className='toggle-opt'; document.getElementById('tog-mob').className='toggle-opt active' }
+loadCatalog() {
+  const { data, error } = await sb.from('stock_available').select('*')
+  if (error) { setConn(false); return }
+  catalog = data.map(r => ({
+    ...r,
+    original_sizes: r.original_sizes || {},
+    available_sizes: r.available_sizes || {}
+  }))
+  setConn(true)
+  buildColorFilters()
+  buildTable()
+  if (viewMode === 'mobile') buildMobileView()
+  updateSummary()
+  subscribeRealtime()
+}
+
+// ── REALTIME ─────────────────────────────────────────────────────────────
+function subscribeRealtime() {
+  sb.channel('orders-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, async () => {
+      await refreshAvailable()
+    })
+    .subscribe(status => {
+      setConn(status === 'SUBSCRIBED')
+    })
+}
+
+async function refreshAvailable() {
+  const { data } = await sb.from('stock_available').select('*')
+  if (!data) return
+  data.forEach(r => {
+    const idx = catalog.findIndex(c => c.id === r.id)
+    if (idx >= 0) {
+      catalog[idx].available_sizes = r.available_sizes || {}
+    }
+  })
+  buildTable()
+  updateSummary()
+}
+
+// ── SAVE ORDER TO SUPABASE ───────────────────────────────────────────────
+async function saveOrderLine(stockId, size, qty) {
+  const name = document.getElementById('d-name').value.trim() || 'Sin nombre'
+  const country = document.getElementById('d-country').value.trim()
+  const contact = document.getElementById('d-contact').value.trim()
+
+  // Buscar si ya existe un pedido de esta sesión para este stock_id+size
+  const { data: existing } = await sb.from('orders')
+    .select('id')
+    .eq('stock_id', stockId)
+    .eq('size', size)
+    .eq('distributor_name', name + '|' + distId)
+    .single()
+
+  if (qty === 0) {
+    if (existing) await sb.from('orders').delete().eq('id', existing.id)
+    return
+  }
+
+  if (existing) {
+    await sb.from('orders').update({ qty, updated_at: new Date().toISOString() }).eq('id', existing.id)
+  } else {
+    await sb.from('orders').insert({
+      distributor_name: name + '|' + distId,
+      country, contact, stock_id: stockId, size, qty
+    })
+  }
+}
+
+function scheduleSave(stockId, size, qty) {
+  const key = stockId + '_' + size
+  clearTimeout(saveTimers[key])
+  saveTimers[key] = setTimeout(() => saveOrderLine(stockId, size, qty), 600)
+}
+
+// ── FILTERS ───────────────────────────────────────────────────────────────
+function buildColorFilters() {
+  const allColors = [...new Set(catalog.map(c => c.color_num))]
+  const wrap = document.getElementById('filter-c')
+  let html = `<span class="badge badge-c c-active" data-c="all" style="background:var(--green-pale);color:var(--green-mid);border-color:#375623;border-width:2px">Todos</span>`
+  allColors.forEach(c => {
+    const m = COLOR_META[c] || { label: c, dot:'#999', cls:'c'+c }
+    html += `<span class="badge badge-c ${m.cls}" data-c="${c}">
+      <span class="cdot" style="background:${m.dot}"></span>${m.label}
+    </span>`
+  })
+  wrap.innerHTML = html
+  wrap.addEventListener('click', e => {
+    const b = e.target.closest('.badge-c'); if (!b) return
+    const c = b.dataset.c
+    if (c === 'all') { activeColors = new Set(['all']) }
+    else {
+      activeColors.delete('all')
+      activeColors.has(c) ? activeColors.delete(c) : activeColors.add(c)
+      if (!activeColors.size) activeColors = new Set(['all'])
+    }
+    wrap.querySelectorAll('.badge-c').forEach(x => {
+      const xc = x.dataset.c
+      const on = activeColors.has('all') ? xc==='all' : activeColors.has(xc)
+      x.classList.toggle('c-active', on)
+      x.classList.toggle('c-dim', !on)
+      if (xc === 'all') {
+        const isOn = activeColors.has('all')
+        x.style.cssText = isOn
+          ? 'background:var(--green-pale);color:var(--green-mid);border-color:#375623;border-width:2px'
+          : 'background:#f5f5f5;color:#888;border-color:#ddd;border-width:1.5px'
+      }
+    })
+    buildTable()
+  })
+}
+
+function filtered() {
+  return catalog.filter(item => {
+    if (activeG === 'men' && WOMEN_IDS.includes(item.id)) return false
+    if (activeG === 'women' && !WOMEN_IDS.includes(item.id)) return false
+    if (!activeColors.has('all') && !activeColors.has(item.color_num)) return false
+    const q = searchTerm.toLowerCase()
+    if (q && !item.description.toLowerCase().includes(q) && !item.model.includes(q)) return false
+    return true
+  })
+}
+
+// ── TABLE ─────────────────────────────────────────────────────────────────
+function getMyOrder(id, sz) { return (orders[id] || {})[sz] || 0 }
+function getAvail(item, sz) {
+  const a = item.available_sizes
+  if (!(sz in (item.original_sizes||{}))) return null
+  // available = stock minus ALL other distributors; we add back our own order
+  let avail = a[sz] !== undefined ? Number(a[sz]) : 0
+  avail += getMyOrder(item.id, sz)   // add back my own so I see real availability
+  return avail
+}
+
+function buildTable() {
+  const wrap = document.getElementById('tbl-wrap')
+  const rows = filtered()
+  if (!rows.length) { wrap.innerHTML = '<div class="loading">Sin modelos para este filtro.</div>'; return }
+
+  let h = '<table><thead>'
+  h += '<tr class="grp-hdr"><th></th>'
+  h += `<th colspan="${ALL_SIZES.length+1}" style="background:rgba(31,78,61,.3)">Stock disponible</th>`
+  h += `<th colspan="${ALL_SIZES.length+1}" style="background:rgba(180,130,0,.35)">Su pedido</th>`
+  h += `<th colspan="${ALL_SIZES.length+1}" style="background:rgba(55,86,35,.4)">Saldo restante</th>`
+  h += '</tr><tr>'
+  h += '<th class="th-info">Modelo</th>'
+  h += '<th style="background:var(--g);min-width:90px;font-size:11px">Precio unit.</th>'
+  ALL_SIZES.forEach(sz => h += `<th class="th-sz">${sz}</th>`)
+  h += '<th class="th-sz" style="min-width:48px">Total</th>'
+  ALL_SIZES.forEach(sz => h += `<th class="th-sz" style="background:#a08000">${sz}</th>`)
+  h += '<th class="th-sz" style="background:#a08000;min-width:48px">Total</th>'
+  ALL_SIZES.forEach(sz => h += `<th class="th-sz" style="background:#27521a">${sz}</th>`)
+  h += '<th class="th-sz" style="background:#27521a;min-width:48px">Saldo</th>'
+  h += '</tr></thead><tbody>'
+
+  let lastSec = ''
+  rows.forEach((item, ri) => {
+    const sec = WOMEN_IDS.includes(item.id) ? 'Mujer' : 'Hombre'
+    if (sec !== lastSec) {
+      h += `<tr class="sec-hdr"><td colspan="${3*(ALL_SIZES.length+1)+1}">${sec === 'Mujer' ? 'Mujer — Ws' : 'Hombre — Men'}</td></tr>`
+      lastSec = sec
+    }
+    const cm = COLOR_META[item.color_num] || { label:item.color_num, dot:'#aaa', cls:'' }
+    const alt = ri%2===0 ? 'alt' : ''
+    h += `<tr class="${alt}">`
+    const imgUrl = IMAGES[item.id] || ''
+    h += `<td class="td-info">
+      <div class="td-info-inner">
+        ${imgUrl ? `<img class="prod-img" src="${imgUrl}" alt="${item.description}" onclick="openLightbox('${imgUrl}','${item.description}')" loading="lazy" />` : ''}
+        <div class="td-info-text">
+          <div class="mt">${item.description}</div>
+          <div class="ms">
+            <span>${item.model}</span>
+            <span class="cpill ${cm.cls}">
+              <span class="cdot" style="background:${cm.dot};width:8px;height:8px;margin-right:3px"></span>${item.color_num} ${item.color_name}
+            </span>
+            ${item.type ? `<span style="font-size:10px;color:#aaa">${item.type}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    </td>`
+
+    // Price cell
+    const unitPrice = PRICES[item.id] || 0
+    const priceStr = unitPrice ? '$' + unitPrice.toLocaleString('es-CL') : '—'
+    h += `<td style="background:#f0f5f0;color:#1F4E3D;font-size:11px;font-weight:500;text-align:right;padding:0 8px;white-space:nowrap">${priceStr}</td>`
+
+    // Stock
+    let stot = 0
+    ALL_SIZES.forEach(sz => {
+      const a = getAvail(item, sz)
+      if (a === null) { h += `<td class="tsna">—</td>`; return }
+      if (a === 0) { h += `<td class="ts0">0</td>`; return }
+      h += `<td class="ts">${a}</td>`; stot += a
+    })
+    h += `<td class="tref">${stot}</td>`
+
+    // Order
+    let otot = 0
+    ALL_SIZES.forEach(sz => {
+      const a = getAvail(item, sz)
+      if (a === null) { h += `<td class="ona">—</td>`; return }
+      const ord = getMyOrder(item.id, sz)
+      if (ord) otot += ord
+      const over = ord > a ? 'over' : ''
+      h += `<td class="oc ${over}"><input type="number" min="0" max="${a}" step="1" value="${ord||''}" placeholder="" data-id="${item.id}" data-sz="${sz.replace('½','HALF')}" data-max="${a}" /></td>`
+    })
+    h += `<td class="tord">${otot||''}</td>`
+
+    // Diff
+    let dtot = 0; let hasSz = false
+    ALL_SIZES.forEach(sz => {
+      const a = getAvail(item, sz)
+      if (a === null) { h += `<td class="df na">—</td>`; return }
+      hasSz = true
+      const d = a - getMyOrder(item.id, sz)
+      dtot += d
+      h += `<td class="df ${d<0?'neg':d===0?'zer':'pos'}">${d}</td>`
+    })
+    const dcls = dtot < 0 ? 'neg' : (dtot===0&&hasSz ? 'zer' : 'pos')
+    h += `<td class="tdif ${dcls}">${dtot}</td>`
+    h += '</tr>'
+  })
+  h += '</tbody></table>'
+  wrap.innerHTML = h
+
+  wrap.querySelectorAll('input[type=number]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const id = inp.dataset.id
+      const sz = inp.dataset.sz.replace('HALF','½')
+      const maxVal = parseInt(inp.dataset.max) || 0
+      let v = Math.max(0, parseInt(inp.value)||0)
+      if (v > maxVal) { v = maxVal; inp.value = maxVal > 0 ? maxVal : '' }
+      if (!orders[id]) orders[id] = {}
+      orders[id][sz] = v
+      scheduleSave(id, sz, v)
+      buildTable()
+      if (viewMode === 'mobile') buildMobileView()
+      updateSummary()
+      checkOver()
+    })
+  })
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────────────────
+function updateSummary() {
+  let pairs=0, stock=0, diff=0, over=0, mods=0
+  catalog.forEach(item => {
+    let mp = 0
+    ALL_SIZES.forEach(sz => {
+      const a = getAvail(item, sz); if (a === null) return
+      const ord = getMyOrder(item.id, sz)
+      stock += a
+      if (ord > 0) { pairs += ord; mp += ord }
+      diff += a - ord
+      if (a - ord < 0) over++
+    })
+    if (mp > 0) mods++
+  })
+  document.getElementById('sm-mods').textContent = mods
+  document.getElementById('sm-pairs').textContent = pairs
+  document.getElementById('sm-stock').textContent = stock
+  const dEl = document.getElementById('sm-diff')
+  dEl.textContent = diff
+  dEl.className = 'sv' + (diff < 0 ? ' err' : diff === 0 ? ' warn' : '')
+  document.getElementById('sm-over').textContent = over
+  const nameVal = document.getElementById('d-name').value.trim()
+  const btn = document.getElementById('btn-submit')
+  btn.disabled = (pairs === 0 || !nameVal)
+  btn.title = !nameVal ? 'Debe ingresar el nombre del distribuidor' : pairs === 0 ? 'Ingrese al menos una cantidad' : ''
+  btn.textContent = !nameVal ? 'Ingrese su nombre para continuar' : 'Enviar pedido →' 
+
+  // Total valorizado
+  let totalValue = 0
+  catalog.forEach(item => {
+    const price = PRICES[item.id] || 0
+    ALL_SIZES.forEach(sz => {
+      totalValue += getMyOrder(item.id, sz) * price
+    })
+  })
+  const DISCOUNT = 0.05
+  const descuento = Math.round(totalValue * DISCOUNT)
+  const neto = Math.round(totalValue - descuento)
+
+  const valEl = document.getElementById('sm-valor')
+  if (valEl) valEl.textContent = totalValue > 0 ? '$' + Math.round(totalValue).toLocaleString('es-CL') : '$0'
+  const descEl = document.getElementById('sm-descuento')
+  if (descEl) descEl.textContent = descuento > 0 ? '-$' + descuento.toLocaleString('es-CL') : '-$0'
+  const netoEl = document.getElementById('sm-neto')
+  if (netoEl) netoEl.textContent = neto > 0 ? '$' + neto.toLocaleString('es-CL') : '$0'
+}
+
+function checkOver() {
+  let has = false
+  catalog.forEach(item => {
+    ALL_SIZES.forEach(sz => {
+      const a = getAvail(item, sz); if (a === null) return
+      if (getMyOrder(item.id, sz) > a) has = true
+    })
+  })
+  document.getElementById('warn-bar').className = 'warn-bar' + (has ? ' show' : '')
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────────────
+async function submitOrder() {
+  const nameInput = document.getElementById('d-name')
+  const name = nameInput.value.trim()
+  if (!name) {
+    nameInput.classList.add('required-error')
+    nameInput.focus()
+    showToast('⚠ Debe ingresar el nombre del distribuidor antes de continuar.', true)
+    // Scroll to top so user sees the field
+    nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    // Remove error style when user starts typing
+    nameInput.addEventListener('input', function onInput() {
+      if (nameInput.value.trim()) {
+        nameInput.classList.remove('required-error')
+        nameInput.removeEventListener('input', onInput)
+      }
+    })
+    return
+  }
+  nameInput.classList.remove('required-error')
+  openConfirmModal()
+}
+
+function openConfirmModal() {
+  const name = document.getElementById('d-name').value.trim() || '—'
+  const country = document.getElementById('d-country').value.trim() || '—'
+  const contact = document.getElementById('d-contact').value.trim() || '—'
+  const now = new Date().toLocaleString('es-CL')
+
+  // Dist info
+  document.getElementById('modal-dist-info').innerHTML = `
+    <span><span style="font-size:10px;color:#888">Distribuidor</span><strong>${name}</strong></span>
+    <span><span style="font-size:10px;color:#888">País</span><strong>${country}</strong></span>
+    <span><span style="font-size:10px;color:#888">Contacto</span><strong>${contact}</strong></span>
+    <span><span style="font-size:10px;color:#888">Fecha</span><strong>${now}</strong></span>`
+
+  // Model cards
+  let bodyHtml = ''
+  let grandPairs = 0
+  catalog.forEach((item, i) => {
+    const price = PRICES[item.id] || 0
+    let itemPairs = 0; let itemValue = 0
+    const chips = []
+    ALL_SIZES.forEach(sz => {
+      const qty = getMyOrder(item.id, sz)
+      if (qty > 0) { itemPairs += qty; itemValue += qty * price; chips.push({ sz, qty }) }
+    })
+    if (itemPairs === 0) return
+    grandPairs += itemPairs
+    const cm = { '731':'c731', '999':'c999' }[item.color_num] || ''
+    bodyHtml += `
+    <div class="model-card">
+      <div class="model-card-hdr" onclick="toggleCard(this)">
+        <div class="mch-left">
+          <div>
+            <div class="mch-title">${item.description}</div>
+            <div class="mch-sub">${item.model} · <span class="cpill ${cm}">${item.color_num} ${item.color_name}</span></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="mch-value">$${itemValue.toLocaleString('es-CL')}</span>
+          <span class="mch-pairs">${itemPairs} pares</span>
+          <span class="mch-arrow">▼</span>
+        </div>
+      </div>
+      <div class="model-card-body">
+        <div class="sz-grid">
+          ${chips.map(c => `<div class="sz-chip"><span class="sz-lbl">UK ${c.sz}</span><span class="sz-qty">${c.qty}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>`
+  })
+  document.getElementById('modal-body').innerHTML = bodyHtml || '<div style="padding:20px;text-align:center;color:#aaa">No hay productos en el pedido</div>'
+
+  // Pricing
+  let subTotal = 0
+  catalog.forEach(item => {
+    const price = PRICES[item.id] || 0
+    ALL_SIZES.forEach(sz => { subTotal += getMyOrder(item.id, sz) * price })
+  })
+  const desc = Math.round(subTotal * 0.05)
+  const total = Math.round(subTotal) - desc
+  document.getElementById('modal-pricing').innerHTML = `
+    <div class="price-row"><span>Subtotal (${grandPairs} pares · IVA inc.)</span><span>$${Math.round(subTotal).toLocaleString('es-CL')}</span></div>
+    <div class="price-row discount"><span>Descuento 5%</span><span>-$${desc.toLocaleString('es-CL')}</span></div>
+    <div class="price-row total"><span>TOTAL (IVA inc.)</span><span>$${total.toLocaleString('es-CL')}</span></div>`
+
+  document.getElementById('confirm-modal').classList.add('open')
+}
+
+function toggleCard(hdr) {
+  hdr.classList.toggle('open')
+  hdr.querySelector('.mch-arrow').classList.toggle('open')
+  hdr.nextElementSibling.classList.toggle('open')
+}
+
+function closeModal() {
+  document.getElementById('confirm-modal').classList.remove('open')
+}
+
+async function sendOrder() {
+  const btn = document.getElementById('modal-send-btn')
+  btn.disabled = true; btn.textContent = 'Enviando…'
+  let subTotal = 0
+  catalog.forEach(item => {
+    const price = PRICES[item.id] || 0
+    ALL_SIZES.forEach(sz => { subTotal += getMyOrder(item.id, sz) * price })
+  })
+  const desc = Math.round(subTotal * 0.05)
+  const total = Math.round(subTotal) - desc
+  closeModal()
+  showToast(`✓ Pedido enviado — Total: $${total.toLocaleString('es-CL')} (IVA inc.)`, false)
+  btn.disabled = false; btn.textContent = 'Confirmar y enviar pedido ✓'
+}
+
+function clearOrders() {
+  orders = {}
+  buildTable()
+  if (viewMode === 'mobile') buildMobileView()
+  updateSummary()
+  checkOver()
+}
+
+function exportCSV() {
+  const name = document.getElementById('d-name').value.trim() || 'distribuidor'
+  const country = document.getElementById('d-country').value.trim() || ''
+  const contact = document.getElementById('d-contact').value.trim() || ''
+  const now = new Date().toISOString().slice(0,10)
+  const wb = XLSX.utils.book_new()
+
+  // Header rows
+  const rows = []
+  rows.push(['PEDIDO LOWA — FW/SS 2026', '', '', '', '', ...ALL_SIZES.map(()=>''), '', '', ''])
+  rows.push([`Distribuidor: ${name}  |  País: ${country}  |  Contacto: ${contact}  |  Fecha: ${now}`])
+  rows.push([])
+
+  // Column headers
+  const hdr = ['Modelo','Tipo','Descripción','Color #','Color']
+  ALL_SIZES.forEach(sz => hdr.push('UK ' + sz))
+  hdr.push('TOTAL', 'P. Unit. (IVA inc.)', 'Subtotal')
+  rows.push(hdr)
+
+  let grandTotal = 0, grandValue = 0
+  catalog.forEach(item => {
+    let tot = 0
+    const vals = []
+    ALL_SIZES.forEach(sz => { const v = getMyOrder(item.id, sz)||0; vals.push(v||''); tot += v })
+    if (tot === 0) return
+    const price = PRICES[item.id] || 0
+    const rowVal = tot * price
+    grandTotal += tot; grandValue += rowVal
+    rows.push([item.model, item.type||'', item.description, item.color_num, item.color_name,
+               ...vals, tot, price, rowVal])
+  })
+
+  // Totals
+  rows.push([])
+  const desc = Math.round(grandValue * 0.05)
+  const neto = Math.round(grandValue) - desc
+  const pad = 5 + ALL_SIZES.length
+  const totalRow = (lbl, val) => [...Array(pad).fill(''), lbl, '', val]
+  rows.push(totalRow('Total pares', grandTotal))
+  rows.push(totalRow('Subtotal (IVA inc.)', grandValue))
+  rows.push(totalRow('Descuento 5%', -desc))
+  rows.push(totalRow('TOTAL (IVA inc.)', neto))
+
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws['!cols'] = [
+    {wch:10},{wch:6},{wch:32},{wch:8},{wch:18},
+    ...ALL_SIZES.map(()=>({wch:6})),
+    {wch:8},{wch:16},{wch:16}
+  ]
+  XLSX.utils.book_append_sheet(wb, ws, 'Pedido')
+  XLSX.writeFile(wb, `PEDIDO_LOWA_${name.replace(/\s+/g,'_')}_${now}.xlsx`)
+}
+
+function showToast(msg, err) {
+  const t = document.getElementById('toast')
+  t.textContent = msg
+  t.className = 'toast ' + (err ? 'err' : 'ok')
+  setTimeout(() => t.className = 'toast hide', err ? 5000 : 3000)
+}
+
+// ── FILTER EVENTS ─────────────────────────────────────────────────────────
+document.getElementById('filter-g').addEventListener('click', e => {
+  const b = e.target.closest('.badge-g'); if (!b) return
+  activeG = b.dataset.g
+  document.querySelectorAll('.badge-g').forEach(x => {
+    x.className = 'badge badge-g'
+    if (x.dataset.g === activeG) x.classList.add('active-' + activeG)
+  })
+  buildTable()
+})
+document.getElementById('search-box').addEventListener('input', e => {
+  searchTerm = e.target.value; buildTable()
+})
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+if (window.innerWidth < 768) { viewMode = 'mobile'; document.getElementById('tog-desk').className='toggle-opt'; document.getElementById('tog-mob').className='toggle-opt active' }
+loadCatalog()
+</script>
+</body>
+</html>
